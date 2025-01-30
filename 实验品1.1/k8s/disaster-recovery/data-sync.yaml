@@ -1,0 +1,28 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: data-sync
+  namespace: warehouse
+spec:
+  schedule: "*/15 * * * *"  # 每15分钟同步一次
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: sync
+            image: warehouse-sync:latest
+            env:
+            - name: PRIMARY_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: warehouse-secrets
+                  key: database-url
+            - name: DR_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: warehouse-secrets-dr
+                  key: database-url
+            - name: SYNC_TYPE
+              value: "incremental"
+          restartPolicy: OnFailure 

@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: integration-test
+  namespace: warehouse
+spec:
+  template:
+    spec:
+      containers:
+      - name: test-runner
+        image: warehouse-test:latest
+        env:
+        - name: TEST_DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: test-secrets
+              key: database-url
+        - name: TEST_REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: test-secrets
+              key: redis-url
+        - name: TEST_API_URL
+          value: "http://warehouse-api:8000"
+        args:
+        - --test-type=integration
+        - --parallel=4
+        - --junit-xml=/reports/integration.xml
+        volumeMounts:
+        - name: test-reports
+          mountPath: /reports
+      volumes:
+      - name: test-reports
+        emptyDir: {}
+      restartPolicy: Never 

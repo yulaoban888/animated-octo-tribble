@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: log-index-template
+  namespace: warehouse
+data:
+  warehouse-template.json: |
+    {
+      "index_patterns": ["warehouse-*"],
+      "settings": {
+        "number_of_shards": 3,
+        "number_of_replicas": 1,
+        "index.lifecycle.name": "warehouse-policy",
+        "index.lifecycle.rollover_alias": "warehouse"
+      },
+      "mappings": {
+        "properties": {
+          "@timestamp": { "type": "date" },
+          "level": { "type": "keyword" },
+          "service": { "type": "keyword" },
+          "trace_id": { "type": "keyword" },
+          "message": { "type": "text" },
+          "error": {
+            "type": "nested",
+            "properties": {
+              "type": { "type": "keyword" },
+              "message": { "type": "text" },
+              "stack_trace": { "type": "text" }
+            }
+          },
+          "request": {
+            "type": "nested",
+            "properties": {
+              "method": { "type": "keyword" },
+              "path": { "type": "keyword" },
+              "duration": { "type": "float" }
+            }
+          }
+        }
+      }
+    } 

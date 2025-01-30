@@ -1,0 +1,75 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: performance-test
+  namespace: warehouse
+spec:
+  template:
+    spec:
+      containers:
+      - name: k6-runner
+        image: loadimpact/k6:latest
+        env:
+        - name: K6_OUT
+          value: "influxdb=http://influxdb:8086/k6"
+        volumeMounts:
+        - name: test-scripts
+          mountPath: /scripts
+        command: ["/usr/bin/k6"]
+        args:
+        - run
+        - /scripts/load-test.js
+        - --vus=50
+        - --duration=5m
+      volumes:
+      - name: test-scripts
+        configMap:
+          name: performance-test-scripts
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: performance-test-scripts
+  namespace: warehouse
+data:
+  load-test.js: |
+    import http from 'k6/http';
+    import { check, sleep } from 'k6';
+    
+    export let options = {
+      stages: [
+        { duration: '1m', target: 20 },
+        { duration: '3m', target: 50 },
+        { duration: '1m', target: 0 }
+      ],
+      thresholds: {
+        http_req_duration: ['p(95)<500'],
+        http_req_failed: ['rate<0.01']
+      }
+    };
+    
+    const BASE_URL = 'http://warehouse-api:8000';
+    
+    export default function() {
+      // 用户认证
+      let loginRes = http.post(`${BASE_URL}/token`, {
+        username: 'test-user',
+        password: 'test-pass'
+      });
+      check(loginRes, { 'login successful': (r) => r.status === 200 });
+      let token = loginRes.json('access_token');
+      
+      // 查询商品
+      let productsRes = http.get(`${BASE_URL}/products/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      check(productsRes, { 'products retrieved': (r) => r.status === 200 });
+      
+      // 查询库存
+      let stockRes = http.get(`${BASE_URL}/stock/1`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      check(stockRes, { 'stock retrieved': (r) => r.status === 200 });
+      
+      sleep(1);
+    } 

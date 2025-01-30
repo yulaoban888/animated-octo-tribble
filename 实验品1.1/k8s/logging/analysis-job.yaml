@@ -1,0 +1,65 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: log-analysis
+  namespace: warehouse
+spec:
+  schedule: "0 */4 * * *"  # 每4小时执行一次
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: log-analyzer
+            image: warehouse-log-analyzer:latest
+            env:
+            - name: ES_HOST
+              value: elasticsearch:9200
+            - name: ALERT_WEBHOOK
+              valueFrom:
+                secretKeyRef:
+                  name: alert-secrets
+                  key: webhook-url
+            args:
+            - --time-range=4h
+            - --error-threshold=100
+            - --latency-threshold=1000
+            - --output-format=json
+            volumeMounts:
+            - name: analysis-config
+              mountPath: /etc/analysis
+          volumes:
+          - name: analysis-config
+            configMap:
+              name: analysis-config
+          restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: analysis-config
+  namespace: warehouse
+data:
+  config.yaml: |
+    analysis:
+      error_patterns:
+        - pattern: ".*Connection refused.*"
+          category: "connection_error"
+        - pattern: ".*Timeout.*"
+          category: "timeout_error"
+      alerts:
+        error_spike:
+          threshold: 100
+          window: 5m
+        latency_spike:
+          threshold: 1000
+          percentile: 95
+      reports:
+        - name: error_summary
+          type: aggregation
+          field: error.type
+        - name: slow_endpoints
+          type: top_n
+          field: request.path
+          metric: request.duration
+          limit: 10 

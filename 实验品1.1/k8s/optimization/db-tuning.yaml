@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-tuning
+  namespace: warehouse
+data:
+  postgresql.conf: |
+    # 内存配置
+    shared_buffers = '2GB'                  # 建议为系统内存的25%
+    effective_cache_size = '6GB'            # 建议为系统内存的75%
+    maintenance_work_mem = '512MB'
+    work_mem = '32MB'
+    
+    # 并发配置
+    max_connections = 200
+    max_worker_processes = 8
+    max_parallel_workers_per_gather = 4
+    max_parallel_workers = 8
+    
+    # 查询优化
+    random_page_cost = 1.1                  # 使用SSD时建议值
+    effective_io_concurrency = 200
+    default_statistics_target = 100
+    
+    # WAL配置
+    wal_buffers = '16MB'
+    checkpoint_completion_target = 0.9
+    
+    # 自动清理
+    autovacuum = on
+    autovacuum_vacuum_scale_factor = 0.1
+    autovacuum_analyze_scale_factor = 0.05 

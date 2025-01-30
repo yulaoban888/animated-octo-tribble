@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-tuning
+  namespace: warehouse
+data:
+  app.conf: |
+    # Uvicorn配置
+    workers_per_core = 2
+    max_workers = 16
+    worker_class = "uvicorn.workers.UvicornWorker"
+    keepalive = 65
+    
+    # 连接池配置
+    db_pool_size = 20
+    db_max_overflow = 10
+    db_pool_timeout = 30
+    redis_pool_size = 20
+    
+    # 缓存配置
+    cache_ttl = 300
+    cache_max_size = 1000
+    
+    # 性能优化
+    enable_gzip = true
+    min_gzip_size = 1024
+    response_timeout = 60
+    graceful_timeout = 120 

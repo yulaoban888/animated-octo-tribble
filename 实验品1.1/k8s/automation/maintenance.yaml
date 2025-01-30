@@ -1,0 +1,30 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: system-maintenance
+  namespace: warehouse
+spec:
+  schedule: "0 2 * * *"  # 每天凌晨2点执行
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: maintenance
+            image: warehouse-maintenance:latest
+            env:
+            - name: MAINTENANCE_TASKS
+              value: "vacuum_db,cleanup_logs,update_statistics"
+            - name: ALERT_WEBHOOK
+              valueFrom:
+                secretKeyRef:
+                  name: maintenance-secrets
+                  key: alert-webhook
+            volumeMounts:
+            - name: maintenance-volume
+              mountPath: /maintenance
+          volumes:
+          - name: maintenance-volume
+            emptyDir: {}
+          restartPolicy: OnFailure 

@@ -1,0 +1,58 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Warehouse Monitoring",
+    "tags": ["warehouse"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "Request Rate",
+        "type": "graph",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "legendFormat": "{{method}} {{endpoint}}"
+          }
+        ]
+      },
+      {
+        "title": "Response Time",
+        "type": "graph",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])",
+            "legendFormat": "{{method}} {{endpoint}}"
+          }
+        ]
+      },
+      {
+        "title": "Stock Levels",
+        "type": "gauge",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "warehouse_stock_level",
+            "legendFormat": "Product {{product_id}}"
+          }
+        ]
+      },
+      {
+        "title": "System Resources",
+        "type": "graph",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "system_memory_usage_bytes{type='used'} / system_memory_usage_bytes{type='total'} * 100",
+            "legendFormat": "Memory Usage %"
+          },
+          {
+            "expr": "avg(system_cpu_usage_percent)",
+            "legendFormat": "CPU Usage %"
+          }
+        ]
+      }
+    ]
+  }
+} 

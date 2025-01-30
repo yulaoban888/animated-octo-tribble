@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: performance-config
+  namespace: warehouse
+data:
+  uvicorn.json: |
+    {
+      "workers": 4,
+      "worker_class": "uvicorn.workers.UvicornWorker",
+      "backlog": 2048,
+      "max_requests": 1000,
+      "max_requests_jitter": 50,
+      "timeout": 120
+    }
+  
+  gunicorn.conf.py: |
+    import multiprocessing
+    
+    workers = multiprocessing.cpu_count() * 2 + 1
+    worker_class = 'uvicorn.workers.UvicornWorker'
+    bind = '0.0.0.0:8000'
+    keepalive = 120
+    max_requests = 1000
+    max_requests_jitter = 50
+    worker_connections = 1000
+    timeout = 120
+    graceful_timeout = 30
+    
+    # 日志配置
+    accesslog = '-'
+    errorlog = '-'
+    loglevel = 'info'
+    access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(L)s'
+    
+    # 性能调优
+    preload_app = True
+    worker_tmp_dir = '/dev/shm'
+    forwarded_allow_ips = '*' 

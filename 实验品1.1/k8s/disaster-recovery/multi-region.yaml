@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: warehouse-api-dr
+  namespace: warehouse
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: warehouse-api
+      region: backup
+  template:
+    metadata:
+      labels:
+        app: warehouse-api
+        region: backup
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: topology.kubernetes.io/region
+                operator: In
+                values:
+                - ap-northeast-2  # 备用区域
+      containers:
+      - name: api
+        image: warehouse-api:latest
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-secrets-dr
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: warehouse-secrets-dr
+              key: redis-url
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10 
